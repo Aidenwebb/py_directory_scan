@@ -45,3 +45,20 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+
+# Directories related to IDE and Builds
+build
+dist
+.idea
+__pycache__
+
+Files related to IDE and Builds
+*.spec
+
+# Config
+config.txt
+
+# Run results
+*.csv
+*.log
