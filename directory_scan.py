@@ -82,9 +82,12 @@ except:
 
 if __name__ == "__main__":
 
+    output_dir = r'./output/'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     for directory in dirs:
 
-        report_file = "{}.csv".format(directory.split("\\")[-1])
         write_csv_row(['Directory Path', 'Directory Size in GB', 'Most recently modified file', 'File Timestamp'])
         print(report_file)
         get_size(directory)

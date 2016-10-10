@@ -48,6 +48,7 @@ Temporary Items
 
 
 # Directories related to IDE and Builds
+output
 build
 dist
 .idea
