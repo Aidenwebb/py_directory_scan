@@ -88,7 +88,10 @@ if __name__ == "__main__":
 
     for directory in dirs:
 
-        report_file = "{0}{1}.csv".format(output_dir, directory.split("\\")[-1])
-        write_csv_row(['Directory Path', 'Directory Size in GB', 'Most recently modified file', 'File Timestamp'])
-        print(report_file)
-        get_size(directory)
+        try:
+            report_file = "{0}{1}.csv".format(output_dir, directory.split("\\")[-1])
+            write_csv_row(['Directory Path', 'Directory Size in GB', 'Most recently modified file', 'File Timestamp'])
+            print(report_file)
+            get_size(directory)
+        except Exception as e:
+            logging.warning("Top level failure: {}".format(e))
