@@ -1,0 +1,4 @@
+\\FILESERVER\SHARE
+C:\Program Files
+C:\Windows
+C:\Users
