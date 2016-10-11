@@ -49,6 +49,7 @@ Temporary Items
 
 # Directories related to IDE and Builds
 output
+infodump-output
 build
 dist
 .idea
@@ -58,7 +59,7 @@ Files related to IDE and Builds
 *.spec
 
 # Config
-config.txt
+scanlist.txt
 
 # Run results
 *.csv

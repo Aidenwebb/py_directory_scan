@@ -1,0 +1,7 @@
+{
+    "directory_list_file": "scanlist.txt",
+    "output_folder": "infodump-output",
+    "execution_log_file": "infodump.log",
+    "report_file_size_in": "GB"
+}
+

@@ -1,9 +1,28 @@
+import json
 import logging
 import time
 import os
 import csv
 
-report_file = 'report.csv'
+# Configure program
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+dirs_to_scan = [line.strip() for line in open(config['directory_list_file'], 'r')]
+
+if config['report_file_size_in'] == 'B':
+    f_size_multiplier = 1
+elif config['report_file_size_in'] == 'KB':
+    f_size_multiplier = 1024
+elif config['report_file_size_in'] == 'MB':
+    f_size_multiplier = 1024*1024
+elif config['report_file_size_in'] == 'GB':
+    f_size_multiplier = 1024 * 1024 * 1024
+elif config['report_file_size_in'] == 'TB':
+    f_size_multiplier = 1024 * 1024 * 1024 * 1024
+else:
+    raise KeyError('"report_file_size_in" value in config.json must be "B", "MB", "GB", or "TB')
+
 
 replace_dict = {
     '\u2004' : " ",
@@ -11,98 +30,98 @@ replace_dict = {
 }
 
 FORMAT = '%(asctime)-15s - %(message)s'
-logging.basicConfig(filename='dirscanner.log', level=logging.INFO, format=FORMAT)
+logging.basicConfig(filename=config['execution_log_file'], level=logging.INFO, format=FORMAT)
 
 
-def write_csv_row(row):
-    with open(report_file, 'a', newline='') as csvfile:
-        print(row)
+class ScanFolder(object):
 
-        file = csv.writer(csvfile, delimiter=',')
-        try:
-            file.writerow(row)
-        except Exception as e:
-            logging.warning(e)
-            logging.warning("{} - {}".format(row.encode('ascii', 'ignore'), e))
+    def __init__(self, directory_path):
+        self.directory_path = directory_path
+        self.report_file = ".\{0}\{1}.csv".format(config['output_folder'], directory_path.split("\\")[-1])
+        self.total_size = 0
 
+        # Write headings
+        self.write_csv_row('Directory Path', 'Directory Size', 'File Name', 'File Size', 'File cTime', 'File mTime', 'File aTime')
 
-def get_newest_file(path):
-    newest_file = max(os.listdir(path), key=lambda f: os.path.getmtime("{}/{}".format(path, f)))
-    newest_file_mod_time = time.strftime("%d/%m/%Y %I:%M:%S %p",
-                                         time.localtime(os.stat(("{}\{}".format(path, newest_file))).st_mtime))
-    return [newest_file, newest_file_mod_time]
+    def write_csv_row(self, dir_path, dir_size, file_name='', file_size='', file_ctime='', file_mtime='', file_atime=''):
+        with open(self.report_file, 'a', newline='') as csvfile:
+            data = [dir_path, dir_size, file_name, file_size, file_ctime, file_mtime, file_atime]
 
-def get_size(start_path = '.'):
-    for ch in ['\u2013', '\u2004']:
-        if ch in start_path:
+            print(data)
 
-            sanitised_path=start_path.replace(ch,replace_dict[ch])
-            logging.info("Sanitising path: {0} | Char {1}".format(sanitised_path, replace_dict[ch]))
-        else: sanitised_path = start_path
+            file = csv.writer(csvfile, delimiter=',')
+            try:
+                file.writerow(data)
+            except Exception as e:
+                logging.error(e)
+                logging.error("{0} - {1} ".format(data, e))
 
-    total_size = 0
-    filenames = []
-    dirnames = []
-    for x in os.scandir(start_path):
-        #print(x.path)
+    def get_folder_size(self):
+        self.total_size = self._get_size(self.directory_path)
 
-        if x.is_file() is True:
-            filenames.append(x.path)
-        if x.is_file() is False:
-            dirnames.append(x.path)
+    def _get_size(self, start_path='.'):
+        for ch in ['\u2013', '\u2004']:
+            if ch in start_path:
 
-    for directory in dirnames:
-        total_size += get_size(directory)
-        #print("in for loop", directory, total_size)
+                sanitised_path = start_path.replace(ch, replace_dict[ch])
+                logging.info("Sanitising path: {0} | Char {1}".format(sanitised_path, replace_dict[ch]))
+            else:
+                sanitised_path = start_path
 
-    for fp in filenames:
-        try:
-            file_size = os.path.getsize(fp)
-            total_size += file_size
-            file_c_time = time.strftime("%d/%m/%Y %I:%M:%S %p", time.localtime(os.path.getctime(fp)))
-            file_m_time = time.strftime("%d/%m/%Y %I:%M:%S %p", time.localtime(os.path.getmtime(fp)))
-            file_a_time = time.strftime("%d/%m/%Y %I:%M:%S %p", time.localtime(os.path.getatime(fp)))
-            print(file_size)
-            print(file_size/(1024*1024*1024))
-            # time.strftime
+        total_size = 0
+        filenames = []
+        dirnames = []
+        for x in os.scandir(start_path):
+            # print(x.path)
 
-            write_csv_row([sanitised_path, '', os.path.basename(fp), file_size/(1024*1024*1024), str(file_c_time), str(file_m_time), str(file_a_time)])
+            if x.is_file() is True:
+                filenames.append(x.path)
+            if x.is_file() is False:
+                dirnames.append(x.path)
 
-        except Exception as e:
-            print(e)
-            print("Could not read file: ", fp)
+        for directory in dirnames:
+            total_size += self._get_size(directory)
+            # print("in for loop", directory, total_size)
 
+        for fp in filenames:
+            try:
+                file_size = os.path.getsize(fp)
+                total_size += file_size
+                file_c_time = time.strftime("%d/%m/%Y %I:%M:%S %p", time.localtime(os.path.getctime(fp)))
+                file_m_time = time.strftime("%d/%m/%Y %I:%M:%S %p", time.localtime(os.path.getmtime(fp)))
+                file_a_time = time.strftime("%d/%m/%Y %I:%M:%S %p", time.localtime(os.path.getatime(fp)))
+                print(file_size)
+                print(file_size / f_size_multiplier)
 
+                self.write_csv_row(sanitised_path, '', os.path.basename(fp), file_size / f_size_multiplier, str(file_c_time), str(file_m_time), str(file_a_time))
+            except Exception as e:
+                print(e)
+                print("Could not read file: ", fp)
 
-    if len(filenames) > 0:
-        newest_file = get_newest_file(start_path)
-        write_csv_row([sanitised_path, total_size/(1024*1024*1024)])
-        #print(start_path, total_size, get_newest_file(start_path))
+        if len(filenames) > 0:
+            self.write_csv_row(sanitised_path, total_size / f_size_multiplier, 'Directory contains files')
 
-    else:
-        write_csv_row([sanitised_path, total_size/(1024*1024*1024), 'No files in directory'])
-        #print(start_path, total_size, 'Null', 'Null')
-    return total_size
-
-try:
-    dirs = [line.strip() for line in open("config.txt", 'r')]
-
-except:
-    print("config.txt required.")
-
+        else:
+            self.write_csv_row(sanitised_path, total_size / f_size_multiplier, 'No files in directory')
+        return total_size
 
 if __name__ == "__main__":
 
-    output_dir = r'./output - infodump/'
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if not os.path.exists(config['output_folder']):
+        os.makedirs(config['output_folder'])
 
-    for directory in dirs:
+    logging.info("Starting directory scanner with config {0}".format(config))
+    logging.info("Scan list: {0}".format(dirs_to_scan))
 
+    for directory in dirs_to_scan:
         try:
-            report_file = "{0}{1}.csv".format(output_dir, directory.split("\\")[-1])
-            write_csv_row(['Directory Path', 'Directory Size in GB', 'Most recently modified file', 'File Timestamp'])
-            print(report_file)
-            get_size(directory)
+            logging.info('Starting scan of {0}'.format(directory))
+            dir = ScanFolder(directory)
+            print(dir.directory_path)
+            print(dir.report_file)
+            dir.get_folder_size()
+            logging.info('Completed scan of {0}. Total size: {1} Bytes'.format(directory, dir.total_size))
         except Exception as e:
-            logging.warning("Top level failure: {}".format(e))
+            logging.critical("Top level failure: {}".format(e))
+
+logging.info("Directory scanner completed successfully")
