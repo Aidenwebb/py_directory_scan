@@ -4,11 +4,29 @@ import time
 import os
 import csv
 
-# Configure program
-with open('config.json', 'r') as f:
-    config = json.load(f)
+# Configure logging
 
-dirs_to_scan = [line.strip() for line in open(config['directory_list_file'], 'r')]
+FORMAT = '%(asctime)-15s - %(message)s'
+
+# Configure program
+try:
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+        logging.basicConfig(filename=config['execution_log_file'], level=logging.INFO, format=FORMAT)
+
+except:
+
+    with open('config.json','w') as f:
+        config = {'output_folder': 'infodump-output', 'execution_log_file': 'infodump.log', 'directory_list_file': 'scanlist.txt', 'report_file_size_in': 'GB'}
+        json.dump(config, f, indent=2, sort_keys=True)
+        logging.basicConfig(filename=config['execution_log_file'], level=logging.INFO, format=FORMAT)
+        logging.info("Config not found. Writing default config file")
+
+try:
+    dirs_to_scan = [line.strip() for line in open(config['directory_list_file'], 'r')]
+
+except:
+    raise FileNotFoundError("{0} file containing list of directories to scan is required".format(config['directory_list_file']))
 
 if config['report_file_size_in'] == 'B':
     f_size_multiplier = 1
@@ -28,9 +46,6 @@ replace_dict = {
     '\u2004' : " ",
     '\u2013' : "-"
 }
-
-FORMAT = '%(asctime)-15s - %(message)s'
-logging.basicConfig(filename=config['execution_log_file'], level=logging.INFO, format=FORMAT)
 
 
 class ScanFolder(object):
