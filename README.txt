@@ -13,4 +13,4 @@ Configure the application in config.json:
     "report_file_size_in": - Choose "B" to report in Byes, "KB" for Kilobytes, "MB" for Megabytes or "GB" for Gigabytes. DEFAULT: "GB"
 
 Place a file named "scanlist.txt" in the same directory as the executable.
-In scanlist.txt, add folder paths with no trailing space, 1 line per item like the example file.
+In scanlist.txt, add folder paths 1 line per item like the example file.
