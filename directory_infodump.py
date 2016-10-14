@@ -51,8 +51,20 @@ replace_dict = {
 class ScanFolder(object):
 
     def __init__(self, directory_path):
+
+        def split_path(path):
+
+            path = path.rstrip('/')
+
+            if (':' in path.split("/")[-1]) or (path.split("/")[-1] == ''):
+                spath = "Disk Root - {}".format(path.split("/")[0].replace(':', ''))
+            else:
+                spath = path.split("/")[-1]
+
+            return spath
+
         self.directory_path = directory_path
-        self.report_file = ".\{0}\{1}.csv".format(config['output_folder'], directory_path.split("\\")[-1])
+        self.report_file = ".\{0}\{1}.csv".format(config['output_folder'], split_path(directory_path))
         self.total_size = 0
 
         # Write headings
@@ -129,6 +141,9 @@ if __name__ == "__main__":
     logging.info("Scan list: {0}".format(dirs_to_scan))
 
     for directory in dirs_to_scan:
+        print(directory)
+        directory = directory.replace('\\','/')
+        print(directory)
         try:
             logging.info('Starting scan of {0}'.format(directory))
             dir = ScanFolder(directory)
